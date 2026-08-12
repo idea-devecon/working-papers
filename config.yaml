@@ -36,5 +36,5 @@ site:
   title: IDEA Working Papers
   base_url: https://papers.idea.devecon.org/
   homepage: https://idea.devecon.org/
-  contact_email: ethan.ligon@gmail.com
+  contact_email: wp-editor@idea.devecon.org
   output_dir: site
