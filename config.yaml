@@ -1,0 +1,40 @@
+# IDEA Working Papers pipeline configuration.
+#
+# A successor society could fork this repo and edit only this file
+# (plus papers.yaml) to run a different series.
+
+zenodo:
+  api_base: https://zenodo.org/api
+  community: ideassoc          # https://zenodo.org/communities/ideassoc/
+
+repec:
+  archive_code: ida            # 3-letter RePEc archive code (proposed; confirmed unused 2026-08-12)
+  series_code: wpaper          # exactly six lowercase letters/numbers
+  archive_name: International Development Economics Association (IDEA)
+  archive_description: >-
+    This archive collects the working papers of the International
+    Development Economics Association (IDEA), a scholarly society
+    supporting research in development economics, especially by
+    scholars outside major research hubs.
+  series_name: IDEA Working Papers
+  series_description: >-
+    Working papers by members of the International Development
+    Economics Association (IDEA).  Papers receive light editorial
+    review (membership, topic relevance, metadata completeness) but
+    not formal peer review.  Each paper is archived on Zenodo with a
+    DOI.
+  provider_name: International Development Economics Association (IDEA)
+  provider_homepage: https://idea.devecon.org/
+  maintainer_name: Ethan Ligon
+  # NOTE: consider a role address (e.g. wp@devecon.org) so the RePEc
+  # registration survives a change of series editor.
+  maintainer_email: ethan.ligon@gmail.com
+  # Where the ReDIF tree will be served from.  Must end in /RePEc/<archive_code>/
+  base_url: https://papers.idea.devecon.org/RePEc/ida/
+
+site:
+  title: IDEA Working Papers
+  base_url: https://papers.idea.devecon.org/
+  homepage: https://idea.devecon.org/
+  contact_email: ethan.ligon@gmail.com
+  output_dir: site

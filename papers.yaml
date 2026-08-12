@@ -1,0 +1,5 @@
+# IDEA Working Papers ledger.  Numbers are assigned once and never
+# reused.  Maintained by the build pipeline; editors may add per-
+# paper overrides (e.g. 'jel: [O12, Q18]') by hand.
+next_number: 1
+papers: []

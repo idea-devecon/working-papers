@@ -1,0 +1,6 @@
+# Built site: generated in CI, deployed as a Pages artifact, never committed.
+site/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

@@ -1,0 +1,65 @@
+{
+  "hits": {
+    "hits": [
+      {
+        "id": 11111111,
+        "recid": 11111111,
+        "conceptrecid": "11111110",
+        "doi": "10.5281/zenodo.11111111",
+        "conceptdoi": "10.5281/zenodo.11111110",
+        "created": "2026-07-01T10:00:00+00:00",
+        "links": {
+          "self": "https://zenodo.org/api/records/11111111",
+          "self_html": "https://zenodo.org/records/11111111"
+        },
+        "metadata": {
+          "title": "Credit Constraints &amp; Smallholder Technology Adoption",
+          "creators": [
+            {"name": "Doe, Jane", "affiliation": "University of Nairobi", "orcid": "0000-0002-1825-0097"},
+            {"name": "Rao, Anand"}
+          ],
+          "description": "<p>We study how <em>credit constraints</em> affect adoption of improved seed varieties.&nbsp;Using panel data from 2,400 households, we find…</p><p>Results suggest subsidies are poorly targeted.</p>",
+          "publication_date": "2026-07-01",
+          "keywords": ["technology adoption", "credit", "JEL: O12, Q16"],
+          "resource_type": {"type": "publication", "subtype": "workingpaper"},
+          "license": {"id": "cc-by-4.0"}
+        },
+        "files": [
+          {"key": "doe-rao-credit constraints.pdf", "size": 500000,
+           "links": {"self": "https://zenodo.org/api/records/11111111/files/doe-rao-credit%20constraints.pdf/content"}}
+        ]
+      },
+      {
+        "id": 22222222,
+        "recid": 22222222,
+        "conceptrecid": "22222220",
+        "doi": "10.5281/zenodo.22222222",
+        "conceptdoi": "10.5281/zenodo.22222220",
+        "created": "2026-08-01T10:00:00+00:00",
+        "links": {
+          "self": "https://zenodo.org/api/records/22222222",
+          "self_html": "https://zenodo.org/records/22222222"
+        },
+        "metadata": {
+          "title": "Remittances and Rural Labor Markets",
+          "creators": [
+            {"name": "Okonkwo, Chidi", "affiliation": "University of Ibadan"}
+          ],
+          "description": "<p>Long abstract intended to exercise the line-wrapping logic of the ReDIF emitter. It keeps going for quite a while, describing identification strategies, data sources, robustness checks, and the broader implications of remittance flows for rural labor supply in several West African economies over two decades.</p>",
+          "publication_date": "2026-08-01",
+          "keywords": ["remittances", "labor supply"],
+          "resource_type": {"type": "publication", "subtype": "workingpaper"},
+          "license": {"id": "cc-by-4.0"}
+        },
+        "files": [
+          {"key": "okonkwo-remittances.pdf", "size": 400000,
+           "links": {"self": "https://zenodo.org/api/records/22222222/files/okonkwo-remittances.pdf/content"}}
+        ]
+      }
+    ],
+    "total": 2
+  },
+  "links": {
+    "self": "https://zenodo.org/api/communities/ideassoc/records?page=1&size=100&sort=oldest"
+  }
+}
