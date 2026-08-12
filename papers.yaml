@@ -1,5 +1,27 @@
 # IDEA Working Papers ledger.  Numbers are assigned once and never
 # reused.  Maintained by the build pipeline; editors may add per-
 # paper overrides (e.g. 'jel: [O12, Q18]') by hand.
-next_number: 1
-papers: []
+next_number: 3
+papers:
+- number: 1
+  conceptrecid: '21904877'
+  added: '2026-08-12'
+  title: 'Science on the Move: How Experiential Pedagogy Shapes Human Capital'
+  authors:
+  - Bharti, Nitin Kumar
+  - Malik, Samreen
+  - Mukhopadhyay, Abhiroop
+  - Prakash, Nishith
+  date: '2026-05-20'
+- number: 2
+  conceptrecid: '21904880'
+  added: '2026-08-12'
+  title: 'Ancient Epics in the Television Age: Religious Identity and the Rise of
+    Hindu Nationalism in India'
+  authors:
+  - Yang, Dean
+  - Saia, Alessandro
+  - Kovvuri, Akhila
+  - Ahmed, Resuf
+  - Brimble, Paul
+  date: '2026-08-07'
