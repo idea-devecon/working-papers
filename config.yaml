@@ -26,9 +26,9 @@ repec:
   provider_name: International Development Economics Association (IDEA)
   provider_homepage: https://idea.devecon.org/
   maintainer_name: Ethan Ligon
-  # NOTE: consider a role address (e.g. wp@devecon.org) so the RePEc
-  # registration survives a change of series editor.
-  maintainer_email: ethan.ligon@gmail.com
+  # Role address, so the RePEc registration survives a change of
+  # series editor.
+  maintainer_email: wp-editor@idea.devecon.org
   # Where the ReDIF tree will be served from.  Must end in /RePEc/<archive_code>/
   base_url: https://papers.idea.devecon.org/RePEc/ida/
 
