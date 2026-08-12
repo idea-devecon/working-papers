@@ -1,0 +1,73 @@
+% Cover page template for IDEA Working Papers.
+% Rendered by scripts/coverpage.py, which substitutes the @@FIELDS@@.
+% Requires: texlive with tikz, geometry, hyperref (all standard).
+\documentclass[11pt]{article}
+\usepackage[letterpaper,margin=1in,top=0.9in,bottom=1in]{geometry}
+\usepackage{tikz}
+\usepackage[hidelinks]{hyperref}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\pagestyle{empty}
+\definecolor{ideateal}{HTML}{1D6E87}
+\definecolor{graytext}{HTML}{555555}
+
+% IDEA globe mark, redrawn from idea.devecon.org/favicon.svg
+% (SVG y-axis points down; coordinates here are pre-flipped.)
+\newcommand{\idealogo}[1]{%
+\begin{tikzpicture}[x=#1/240,y=#1/240,line cap=round,line join=round]
+  \begin{scope}[ideateal,line width=0.054*#1]
+    \draw (120,120) circle[radius=92];
+    \draw (120,212) -- (120,28);
+    \draw (120,212) .. controls (80,150.67) and (80,89.33) .. (120,28);
+    \draw (37,160) .. controls (76.33,169.33) and (104,164.67) .. (120,166);
+    \draw (28,120) -- (120,120);
+    \draw (37,80) .. controls (76.33,70.67) and (104,75.33) .. (120,74);
+  \end{scope}
+\end{tikzpicture}}
+
+\begin{document}
+\begin{center}
+
+\idealogo{5.2em}
+
+\vspace{0.4em}
+{\large\scshape International Development Economics Association}
+
+\vspace{0.5em}
+{\color{ideateal}\rule{0.72\textwidth}{0.8pt}}
+
+\vspace{0.9em}
+{\large IDEA Working Paper No.\ @@NUMBER@@}\\[0.3em]
+{\normalsize @@DATE@@}
+
+\vspace{4.5em}
+{\LARGE\bfseries @@TITLE@@\par}
+
+\vspace{2.8em}
+{\large @@AUTHORS@@\par}
+
+\vspace{1.2em}
+{\normalsize\color{graytext} @@AFFILIATIONS@@\par}
+
+\vfill
+
+{\normalsize DOI: \href{https://doi.org/@@DOI@@}{@@DOI@@}\par}
+\vspace{0.4em}
+{\normalsize\href{https://papers.idea.devecon.org/}{papers.idea.devecon.org}\par}
+@@JELLINE@@
+
+\vspace{2.5em}
+{\color{ideateal}\rule{0.72\textwidth}{0.8pt}}
+
+\vspace{1em}
+\begin{minipage}{0.86\textwidth}
+\footnotesize\color{graytext}
+IDEA Working Papers circulate research by members of the International
+Development Economics Association to promote discussion and comment.
+They have received light editorial review but not peer review; views
+and findings are those of the authors.  \copyright{} @@YEAR@@ by the
+authors.  @@LICENSE@@
+\end{minipage}
+
+\end{center}
+\end{document}

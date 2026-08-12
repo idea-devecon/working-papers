@@ -2,12 +2,20 @@
 """Create a Zenodo draft deposit for a working paper.
 
 Usage:
-    ZENODO_TOKEN=... python scripts/deposit.py metadata.yaml paper.pdf [--sandbox]
+    ZENODO_TOKEN=... python scripts/deposit.py metadata.yaml paper.pdf \
+        [--cover --number N] [--sandbox]
 
 Creates an *unpublished draft* with the PDF attached and the ideassoc
 community pre-selected, then prints the draft URL.  The series editor
 reviews the draft in the browser and clicks Publish -- publishing stays
 a human decision.
+
+With --cover, a branded IDEA cover page is prepended to the PDF before
+upload (see scripts/coverpage.py; requires pdflatex and pdfunite).  The
+cover carries the working-paper number you pass with --number and the
+DOI Zenodo pre-reserves for the draft.  Pick the number the ledger will
+assign: papers are numbered by publication_date (ties broken by record
+id), so check papers.yaml and the dates of anything else in the queue.
 
 The metadata YAML looks like:
 
@@ -45,7 +53,13 @@ def main() -> int:
     ap.add_argument("metadata", help="YAML file with paper metadata")
     ap.add_argument("pdf", help="the paper, as a PDF")
     ap.add_argument("--sandbox", action="store_true", help="use sandbox.zenodo.org")
+    ap.add_argument("--cover", action="store_true",
+                    help="prepend an IDEA cover page before uploading")
+    ap.add_argument("--number", type=int,
+                    help="working-paper number for the cover (required with --cover)")
     args = ap.parse_args()
+    if args.cover and not args.number:
+        ap.error("--cover requires --number")
 
     token = os.environ.get("ZENODO_TOKEN")
     if not token:
@@ -87,17 +101,37 @@ def main() -> int:
     if keywords:
         deposit_metadata["keywords"] = keywords
 
-    # 1. Create an empty deposition.
+    # 1. Create an empty deposition (Zenodo pre-reserves its DOI).
     r = requests.post(f"{base}/deposit/depositions", json={}, headers=auth, timeout=30)
     r.raise_for_status()
     dep = r.json()
+    doi = (
+        dep.get("metadata", {}).get("prereserve_doi", {}).get("doi")
+        or f"10.5281/zenodo.{dep['id']}"
+    )
+
+    # 1b. Optionally prepend the branded cover page.
+    upload = pdf
+    tmpdir = None
+    if args.cover:
+        import tempfile
+
+        sys.path.insert(0, str(Path(__file__).parent))
+        import coverpage
+
+        tmpdir = tempfile.TemporaryDirectory()
+        upload = Path(tmpdir.name) / f"IDEA-wp{args.number:04d}.pdf"
+        coverpage.make_covered_pdf(meta, args.number, doi, pdf, upload)
+        print(f"Cover page added (WP No. {args.number}, DOI {doi}).")
 
     # 2. Upload the PDF to the deposition's file bucket.
-    with open(pdf, "rb") as fh:
+    with open(upload, "rb") as fh:
         r = requests.put(
-            f"{dep['links']['bucket']}/{pdf.name}", data=fh, headers=auth, timeout=300
+            f"{dep['links']['bucket']}/{upload.name}", data=fh, headers=auth, timeout=300
         )
     r.raise_for_status()
+    if tmpdir is not None:
+        tmpdir.cleanup()
 
     # 3. Attach the metadata.
     r = requests.put(

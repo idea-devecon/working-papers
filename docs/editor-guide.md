@@ -37,11 +37,22 @@ no further action.
 
    *Script route (editor deposits on the author's behalf):*
    ```sh
-   ZENODO_TOKEN=... python scripts/deposit.py metadata.yaml paper.pdf
+   ZENODO_TOKEN=... python scripts/deposit.py metadata.yaml paper.pdf --cover --number N
    ```
    (see the header of `scripts/deposit.py` for the metadata format).
    The script creates an unpublished draft; review it in the browser
-   and click Publish.
+   and click Publish. `--cover` prepends the branded series cover
+   page — with the WP number, the DOI Zenodo pre-reserves for the
+   draft, date, and disclaimer — to the PDF (requires `pdflatex` and
+   `pdfunite`; see `scripts/coverpage.py`). Choose `N` as the number
+   the ledger will assign: next free number, ordering any queued
+   papers by their `publication_date`.
+
+   Note on licensing: the default is CC-BY-4.0, which requires the
+   authors' consent — confirm when acknowledging the submission (a
+   line like "working papers are posted under a CC-BY 4.0 license
+   unless you tell us otherwise" suffices). The license can be
+   changed on the draft before publishing.
 
 3. **Accept into the community.** As community curator you'll get a
    Zenodo notification of the submission request; accept it at
