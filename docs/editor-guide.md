@@ -12,7 +12,7 @@ runs daily on GitHub Actions: it reads the Zenodo community, assigns
 each new paper the next working-paper number (recorded permanently in
 `papers.yaml`), and publishes two things to
 <https://papers.idea.devecon.org/>: a human-readable index page and a
-machine-readable metadata tree (`/RePEc/ida/`) that RePEc crawls
+machine-readable metadata tree (`/RePEc/idd/`) that RePEc crawls
 daily. Once a paper is accepted into the Zenodo community, it appears
 on the website and in [IDEAS](https://ideas.repec.org/) /
 [EconPapers](https://econpapers.repec.org/) within a day or two, with

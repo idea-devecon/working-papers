@@ -8,7 +8,7 @@ zenodo:
   community: ideassoc          # https://zenodo.org/communities/ideassoc/
 
 repec:
-  archive_code: ida            # 3-letter RePEc archive code (proposed; confirmed unused 2026-08-12)
+  archive_code: idd            # 3-letter RePEc archive code (assigned by the RePEc team 2026-08-13)
   series_code: wpaper          # exactly six lowercase letters/numbers
   archive_name: International Development Economics Association (IDEA)
   archive_description: >-
@@ -30,7 +30,7 @@ repec:
   # series editor.
   maintainer_email: wp-editor@idea.devecon.org
   # Where the ReDIF tree will be served from.  Must end in /RePEc/<archive_code>/
-  base_url: https://papers.idea.devecon.org/RePEc/ida/
+  base_url: https://papers.idea.devecon.org/RePEc/idd/
 
 site:
   title: IDEA Working Papers

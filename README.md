@@ -5,7 +5,7 @@ Development Economics Association](https://idea.devecon.org/) (IDEA).
 
 Live site: <https://papers.idea.devecon.org/> ·
 Archive: [Zenodo community `ideassoc`](https://zenodo.org/communities/ideassoc/) ·
-RePEc handle: `RePEc:ida:wpaper`
+RePEc handle: `RePEc:idd:wpaper`
 
 ## How it works
 
@@ -19,7 +19,7 @@ this repo: GitHub Actions runs `python -m ideawp.build`
     ▼
 GitHub Pages  →  papers.idea.devecon.org
     │  /            human-readable index of the series
-    │  /RePEc/ida/  machine-readable ReDIF tree
+    │  /RePEc/idd/  machine-readable ReDIF tree
     ▼
 RePEc crawls daily  →  IDEAS / EconPapers / NEP alerts
 ```

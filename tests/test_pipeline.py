@@ -115,15 +115,15 @@ def _fields(template):
 def test_archive_template(cfg):
     f = _fields(redif.archive_template(cfg))
     assert f["Template-Type"] == ["ReDIF-Archive 1.0"]
-    assert f["Handle"] == ["RePEc:ida"]
-    assert f["URL"] == ["https://papers.idea.devecon.org/RePEc/ida/"]
+    assert f["Handle"] == ["RePEc:idd"]
+    assert f["URL"] == ["https://papers.idea.devecon.org/RePEc/idd/"]
     assert "Maintainer-Email" in f
 
 
 def test_series_template(cfg):
     f = _fields(redif.series_template(cfg))
     assert f["Template-Type"] == ["ReDIF-Series 1.0"]
-    assert f["Handle"] == ["RePEc:ida:wpaper"]
+    assert f["Handle"] == ["RePEc:idd:wpaper"]
     assert f["Type"] == ["ReDIF-Paper"]
     assert "Provider-Name" in f and "Maintainer-Email" in f
 
@@ -135,7 +135,7 @@ def test_paper_template_mandatory_fields(cfg, papers):
     assert f["Template-Type"] == ["ReDIF-Paper 1.0"]
     assert f["Author-Name"] == ["Doe, Jane", "Rao, Anand"]
     assert f["Title"] == ["Credit Constraints & Smallholder Technology Adoption"]
-    assert f["Handle"] == ["RePEc:ida:wpaper:1"]
+    assert f["Handle"] == ["RePEc:idd:wpaper:1"]
     assert f["Classification-JEL"] == ["O12, Q16"]
     assert f["File-Format"] == ["application/pdf"]
     assert f["DOI"] == ["10.5281/zenodo.11111110"]
@@ -168,7 +168,7 @@ def test_withdrawn_paper_has_no_file_cluster(cfg, papers):
     f = _fields(t)
     assert "File-URL" not in f
     assert f["Title"] == ["Gone Paper"]
-    assert f["Handle"] == ["RePEc:ida:wpaper:3"]
+    assert f["Handle"] == ["RePEc:idd:wpaper:3"]
 
 
 # ---------------------------------------------------------------- site
@@ -185,8 +185,8 @@ def test_index_html(cfg, papers):
 
 
 def test_dir_index():
-    out = site.dir_index("RePEc:ida", ["idaarch.redif", "idaseri.redif", "wpaper/"])
-    assert '<a href="idaarch.redif">idaarch.redif</a>' in out
+    out = site.dir_index("RePEc:idd", ["iddarch.redif", "iddseri.redif", "wpaper/"])
+    assert '<a href="iddarch.redif">iddarch.redif</a>' in out
     assert '<a href="wpaper/">wpaper/</a>' in out
 
 
