@@ -20,9 +20,12 @@ no further action.
 
 ## Handling a submission
 
-1. **Editorial check.** Verify the author is an IDEA member and the
-   paper is on-topic. This series applies light editorial review, not
-   peer review.
+1. **Editorial check, and acknowledge.** Verify the author is an IDEA
+   member and the paper is on-topic. This series applies light
+   editorial review, not peer review. Reply using the wording in
+   [`acknowledgment.md`](acknowledgment.md), which asks for the CC-BY
+   consent the deposit needs; record the answer as `license_consent:`
+   in the paper's metadata YAML.
 
 2. **Deposit to Zenodo.** Two equivalent routes:
 
@@ -49,10 +52,10 @@ no further action.
    papers by their `publication_date`.
 
    Note on licensing: the default is CC-BY-4.0, which requires the
-   authors' consent — confirm when acknowledging the submission (a
-   line like "working papers are posted under a CC-BY 4.0 license
-   unless you tell us otherwise" suffices). The license can be
-   changed on the draft before publishing.
+   authors' consent (step 1). The script warns if the metadata does
+   not record it, but does not stop — depositing a draft while you
+   wait for a reply is fine. The license can be changed on the draft
+   right up until you publish, which is the last reversible moment.
 
 3. **Accept into the community.** As community curator you'll get a
    Zenodo notification of the submission request; accept it at
@@ -63,6 +66,22 @@ no further action.
    immediately, run the workflow by hand: repo → Actions → *Build and
    deploy* → *Run workflow* — or locally, `python -m ideawp.build`
    (then commit the updated `papers.yaml`).
+
+## Metadata conventions
+
+- **Titles** are title case, Chicago style: principal words
+  capitalized; articles, coordinating conjunctions, and prepositions of
+  any length lowercase; first word after a colon capitalized. So
+  "Evidence from India", "Feels like Math". Authors submit in whatever
+  case they like; the series normalizes.
+- **Author names** as `Last, First` with affiliation. If the authors
+  randomized the order, record `random_order: true` so it is not later
+  mistaken for a sorting error.
+- **JEL codes** belong in `jel:`, not typed into `keywords:` —
+  `deposit.py` generates the `JEL: ...` keyword that RePEc parses.
+- **Abstracts** are copied from the paper, but check them: `pdftotext`
+  drops the hyphen at a line break, turning "wet-bulb" into "wetbulb".
+  The error is invisible unless you read the result.
 
 ## Occasional tasks
 

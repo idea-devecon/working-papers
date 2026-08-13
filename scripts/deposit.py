@@ -31,6 +31,14 @@ The metadata YAML looks like:
     keywords: [technology adoption, credit]
     jel: [O12, Q16]                # becomes a "JEL: ..." keyword
     license: cc-by-4.0             # optional; this is the default
+    license_consent: confirmed 2026-08-15   # optional but checked; see
+                                            # docs/acknowledgment.md
+
+Any other keys are ignored, so the file doubles as the submission
+record (who sent it, when).  license_consent is the exception: if it
+does not begin with "confirmed", the script warns, because posting
+under CC-BY without the authors' agreement is the one mistake here
+that is hard to undo.
 
 Get a token at https://zenodo.org/account/settings/applications/
 (scopes: deposit:write, deposit:actions).
@@ -77,6 +85,20 @@ def main() -> int:
     for req in ("title", "creators", "abstract"):
         if not meta.get(req):
             sys.exit(f"metadata is missing required field: {req}")
+
+    # Not fatal: depositing a draft before the authors have replied is a
+    # normal thing to do.  Publishing without their agreement is not, and
+    # the draft is the last checkpoint before that becomes irreversible.
+    consent = str(meta.get("license_consent") or "").strip()
+    if not consent.lower().startswith("confirmed"):
+        print(
+            f"WARNING: license_consent is {consent or 'absent'!r}, so the authors have\n"
+            f"         not agreed to {meta.get('license', 'cc-by-4.0')} in writing.\n"
+            "         The draft stays unpublished; confirm before you click Publish\n"
+            "         (wording in docs/acknowledgment.md), then record it in the\n"
+            "         metadata as 'license_consent: confirmed <date>'.",
+            file=sys.stderr,
+        )
 
     keywords = list(meta.get("keywords", []))
     if meta.get("jel"):
