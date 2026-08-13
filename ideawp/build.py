@@ -74,6 +74,9 @@ def build(cfg: dict, ledger_path: str | Path) -> dict:
     (out / "index.html").write_text(
         site.index_html(by_concept, ledger, cfg), encoding="utf-8"
     )
+    (out / site.BIB_FILENAME).write_text(
+        site.bib_file(by_concept, ledger, cfg), encoding="utf-8"
+    )
     (out / ".nojekyll").write_text("", encoding="utf-8")
 
     # Static assets (self-hosted webfonts, and their licences) live in the

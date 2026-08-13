@@ -8,7 +8,7 @@ import pytest
 import yaml
 
 from ideawp import ledger as ledger_mod
-from ideawp import redif, site, zenodo
+from ideawp import bibtex, redif, site, zenodo
 
 FIXTURE = Path(__file__).parent / "fixtures" / "community_records.json"
 CONFIG = Path(__file__).parent.parent / "config.yaml"
@@ -193,3 +193,80 @@ def test_dir_index():
 def test_index_html_empty(cfg):
     html_out = site.index_html({}, {"next_number": 1, "papers": []}, cfg)
     assert "No papers published yet" in html_out
+
+
+# ------------------------------------------------------------- bibtex
+
+def _led(papers):
+    led = {"next_number": 1, "papers": []}
+    ledger_mod.sync(led, papers, today="2026-08-12")
+    return led
+
+
+def test_bibtex_entry_shape(cfg, papers):
+    entry = bibtex.entry(papers[1], {"number": 2}, cfg, "okonkwo2026remittances")
+    assert entry.startswith("@techreport{okonkwo2026remittances,")
+    assert entry.rstrip().endswith("}")
+    f = dict(
+        re.match(r"\s*(\w+)\s*=\s*(.*?),?$", line).groups()
+        for line in entry.splitlines()[1:-1]
+    )
+    assert f["author"] == "{Okonkwo, Chidi}"
+    # Inner braces protect the title's capitalization from the style.
+    assert f["title"] == "{{Remittances and Rural Labor Markets}}"
+    assert f["year"] == "{2026}"
+    assert f["month"] == "aug"  # a macro, so deliberately unbraced
+    assert f["type"] == "{Working Paper}"
+    assert f["series"] == "{IDEA Working Papers}"
+    assert f["number"] == "{2}"
+    assert f["doi"] == "{10.5281/zenodo.22222220}"
+
+
+def test_bibtex_escapes_tex_specials(cfg, papers):
+    # The fixture title contains a literal ampersand.
+    entry = bibtex.entry(papers[0], {"number": 1}, cfg, "doe2026credit")
+    assert r"Credit Constraints \& Smallholder" in entry
+    assert "&amp;" not in entry  # HTML escaping must not leak into the .bib
+
+
+def test_bibtex_escape_backslash_not_doubled():
+    assert bibtex.escape("a_b") == r"a\_b"
+    assert bibtex.escape("100%") == r"100\%"
+    assert bibtex.escape("\\") == r"\textbackslash{}"
+    assert bibtex.escape("{x}") == r"\{x\}"
+
+
+def test_cite_key_form_and_stopwords(papers):
+    assert bibtex.cite_key(papers[0]) == "doe2026credit"
+    assert bibtex.cite_key(papers[1]) == "okonkwo2026remittances"
+
+
+def test_cite_key_disambiguates(papers):
+    first = bibtex.cite_key(papers[0])
+    assert bibtex.cite_key(papers[0], {first}) == first + "b"
+    assert bibtex.cite_key(papers[0], {first, first + "b"}) == first + "c"
+
+
+def test_cite_keys_stable_under_new_papers(cfg, papers):
+    """A later paper must not change an earlier paper's key."""
+    led = _led(papers)
+    keys = site.cite_keys({p.conceptrecid: p for p in papers}, led)
+    older = {p.conceptrecid: p for p in papers[:1]}
+    led_older = {"next_number": 2, "papers": [e for e in led["papers"] if e["number"] == 1]}
+    assert site.cite_keys(older, led_older)["11111110"] == keys["11111110"]
+
+
+def test_bib_file_holds_every_paper(cfg, papers):
+    out = site.bib_file({p.conceptrecid: p for p in papers}, _led(papers), cfg)
+    assert out.count("@techreport{") == 2
+    assert out.endswith("\n")
+
+
+def test_index_html_embeds_bibtex(cfg, papers):
+    out = site.index_html({p.conceptrecid: p for p in papers}, _led(papers), cfg)
+    assert "<summary>BibTeX</summary>" in out
+    assert "@techreport{doe2026credit," in out
+    # Inside the page the entry is HTML-escaped, so the ampersand the
+    # .bib escapes for TeX must survive as an HTML entity too.
+    assert r"Credit Constraints \&amp; Smallholder" in out
+    assert site.BIB_FILENAME in out

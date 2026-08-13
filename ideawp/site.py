@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 
+from . import bibtex
 from .redif import paper_handle
 from .zenodo import Paper
 
@@ -114,11 +115,48 @@ footer {
   font-size: .85rem; text-align: center; padding: 1.5rem 1rem 2.5rem;
 }
 .empty { text-align: center; color: var(--muted); padding: 3rem 0; }
+.bibwrap { position: relative; }
+.bibwrap pre {
+  font-family: var(--mono); font-size: .74rem; line-height: 1.55;
+  background: var(--card); border: 1px solid var(--rule);
+  border-radius: 4px; padding: .85rem 1rem; margin: .5rem 0 0;
+  overflow-x: auto; white-space: pre;
+}
+button.copy {
+  position: absolute; top: .95rem; right: .5rem; z-index: 1;
+  font-family: var(--mono); font-size: .7rem; cursor: pointer;
+  color: var(--accent); background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 3px; padding: .2rem .5rem;
+}
+button.copy:hover { color: var(--accent-hover); border-color: var(--accent); }
 """
 )
 
 
-def _paper_entry(paper: Paper, entry: dict, cfg: dict) -> str:
+BIB_FILENAME = "idea-working-papers.bib"
+
+# One delegated listener rather than one per entry, so the cost does not
+# grow with the series.  Without JS the entry is still there to select
+# by hand, which is why the <pre> holds the text and the button only
+# copies it.
+_COPY_JS = """
+document.addEventListener('click', function (ev) {
+  var btn = ev.target.closest('.copy');
+  if (!btn) return;
+  var pre = btn.parentElement.querySelector('pre');
+  if (!pre || !navigator.clipboard) return;
+  navigator.clipboard.writeText(pre.textContent).then(function () {
+    btn.textContent = 'Copied';
+    setTimeout(function () { btn.textContent = btn.dataset.label; }, 1500);
+  }, function () {
+    btn.textContent = 'Press Ctrl+C';
+    setTimeout(function () { btn.textContent = btn.dataset.label; }, 2000);
+  });
+});
+"""
+
+
+def _paper_entry(paper: Paper, entry: dict, cfg: dict, key: str) -> str:
     r = cfg["repec"]
     e = html.escape
     number = entry["number"]
@@ -139,6 +177,13 @@ def _paper_entry(paper: Paper, entry: dict, cfg: dict) -> str:
         bits.append("JEL: " + ", ".join(entry.get("jel") or paper.jel))
     if bits:
         kw = f'<p class="kw">{e(" · ".join(bits))}</p>'
+    bib = bibtex.entry(paper, entry, cfg, key)
+    bib_block = (
+        '<details class="bib"><summary>BibTeX</summary>'
+        '<div class="bibwrap">'
+        '<button class="copy" type="button" data-label="Copy">Copy</button>'
+        f"<pre>{e(bib)}</pre></div></details>"
+    )
     return f"""<article>
 <p class="wpno">Working Paper No. {number} · <span class="meta">{e(handle)}</span></p>
 <h2><a href="{e(paper.doi_url)}">{e(paper.title)}</a></h2>
@@ -147,6 +192,7 @@ def _paper_entry(paper: Paper, entry: dict, cfg: dict) -> str:
 {abstract}
 {kw}
 <p class="links">{" ".join(links)}</p>
+{bib_block}
 </article>"""
 
 
@@ -163,13 +209,47 @@ def dir_index(title: str, entries: list[str]) -> str:
     return f"<!doctype html>\n<html>\n<head><title>{e(title)}</title></head>\n<body>\n{links}\n</body>\n</html>\n"
 
 
+def cite_keys(papers_by_concept: dict[str, Paper], ledger: dict) -> dict[str, str]:
+    """Map conceptrecid -> BibTeX citation key.
+
+    Allocated in ascending working-paper number so that a new paper
+    cannot change the key of an older one: readers cite these, and a
+    key that moved would silently break a bibliography.
+    """
+    keys: dict[str, str] = {}
+    taken: set[str] = set()
+    for entry in sorted(ledger["papers"], key=lambda x: x["number"]):
+        paper = papers_by_concept.get(entry["conceptrecid"])
+        if paper is None or entry.get("withdrawn"):
+            continue
+        key = bibtex.cite_key(paper, taken)
+        taken.add(key)
+        keys[entry["conceptrecid"]] = key
+    return keys
+
+
+def bib_file(papers_by_concept: dict[str, Paper], ledger: dict, cfg: dict) -> str:
+    """The whole series as one .bib file."""
+    keys = cite_keys(papers_by_concept, ledger)
+    return bibtex.bibliography(
+        [
+            bibtex.entry(papers_by_concept[entry["conceptrecid"]], entry, cfg,
+                         keys[entry["conceptrecid"]])
+            for entry in sorted(ledger["papers"], key=lambda x: x["number"])
+            if entry["conceptrecid"] in keys
+        ]
+    )
+
+
 def index_html(papers_by_concept: dict[str, Paper], ledger: dict, cfg: dict) -> str:
     s, r = cfg["site"], cfg["repec"]
     e = html.escape
+    keys = cite_keys(papers_by_concept, ledger)
     entries = [
-        _paper_entry(papers_by_concept[entry["conceptrecid"]], entry, cfg)
+        _paper_entry(papers_by_concept[entry["conceptrecid"]], entry, cfg,
+                     keys[entry["conceptrecid"]])
         for entry in sorted(ledger["papers"], key=lambda x: -x["number"])
-        if entry["conceptrecid"] in papers_by_concept and not entry.get("withdrawn")
+        if entry["conceptrecid"] in keys
     ]
     body = "\n".join(entries) if entries else '<p class="empty">No papers published yet.</p>'
     return f"""<!doctype html>
@@ -195,8 +275,10 @@ Economics Association</a>. To submit a paper, contact the series editor at
 <footer>
 <p>Papers are archived on <a href="https://zenodo.org/communities/{e(cfg["zenodo"]["community"])}/">Zenodo</a>
 and indexed by <a href="https://ideas.repec.org/">RePEc/IDEAS</a>.
-Machine-readable metadata: <a href="/RePEc/{e(r["archive_code"])}/">/RePEc/{e(r["archive_code"])}/</a>.</p>
+Machine-readable metadata: <a href="/RePEc/{e(r["archive_code"])}/">/RePEc/{e(r["archive_code"])}/</a>.
+Every entry as one file: <a href="{e(BIB_FILENAME)}">{e(BIB_FILENAME)}</a>.</p>
 </footer>
+<script>{_COPY_JS}</script>
 </body>
 </html>
 """
