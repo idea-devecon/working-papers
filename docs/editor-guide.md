@@ -45,8 +45,9 @@ no further action.
    (see the header of `scripts/deposit.py` for the metadata format).
    The script creates an unpublished draft; review it in the browser
    and click Publish. `--cover` prepends the branded series cover
-   page — with the WP number, the DOI Zenodo pre-reserves for the
-   draft, date, and disclaimer — to the PDF (requires `pdflatex` and
+   page — with the WP number, the paper's concept DOI (the one that
+   follows later revisions, and the one the ReDIF record carries),
+   date, and disclaimer — to the PDF (requires `pdflatex` and
    `pdfunite`; see `scripts/coverpage.py`). Choose `N` as the number
    the ledger will assign: next free number, ordering any queued
    papers by their `publication_date`.

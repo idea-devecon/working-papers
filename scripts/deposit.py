@@ -13,7 +13,9 @@ a human decision.
 With --cover, a branded IDEA cover page is prepended to the PDF before
 upload (see scripts/coverpage.py; requires pdflatex and pdfunite).  The
 cover carries the working-paper number you pass with --number and the
-DOI Zenodo pre-reserves for the draft.  Pick the number the ledger will
+paper's *concept* DOI -- the one that keeps resolving to the current
+version, so the cover of a revision cites the same string as the
+original.  Pick the number the ledger will
 assign: papers are numbered by publication_date (ties broken by record
 id), so check papers.yaml and the dates of anything else in the queue.
 
@@ -123,14 +125,29 @@ def main() -> int:
     if keywords:
         deposit_metadata["keywords"] = keywords
 
-    # 1. Create an empty deposition (Zenodo pre-reserves its DOI).
+    # 1. Create an empty deposition.  Zenodo pre-reserves a *version* DOI
+    #    and allocates the concept recid immediately, but leaves
+    #    `conceptdoi` empty until the record is published.  The cover
+    #    prints the concept DOI, which is the one that keeps resolving to
+    #    the current version and the one the ReDIF record carries, so
+    #    build it from the recid.  The prefix comes from the pre-reserved
+    #    DOI rather than being hardcoded, so this still works on sandbox.
     r = requests.post(f"{base}/deposit/depositions", json={}, headers=auth, timeout=30)
     r.raise_for_status()
     dep = r.json()
-    doi = (
+    version_doi = (
         dep.get("metadata", {}).get("prereserve_doi", {}).get("doi")
         or f"10.5281/zenodo.{dep['id']}"
     )
+    conceptrecid = dep.get("conceptrecid")
+    if conceptrecid:
+        doi = f"{version_doi.split('/', 1)[0]}/zenodo.{conceptrecid}"
+    else:
+        # Should not happen, but a version DOI beats no DOI on the cover.
+        doi = version_doi
+        print("WARNING: no conceptrecid on the draft; cover will carry the\n"
+              "         version DOI, which will not follow later revisions.",
+              file=sys.stderr)
 
     # 1b. Optionally prepend the branded cover page.
     upload = pdf
@@ -144,7 +161,8 @@ def main() -> int:
         tmpdir = tempfile.TemporaryDirectory()
         upload = Path(tmpdir.name) / f"IDEA-wp{args.number:04d}.pdf"
         coverpage.make_covered_pdf(meta, args.number, doi, pdf, upload)
-        print(f"Cover page added (WP No. {args.number}, DOI {doi}).")
+        print(f"Cover page added (WP No. {args.number}, concept DOI {doi}; "
+              f"this version {version_doi}).")
 
     # 2. Upload the PDF to the deposition's file bucket.
     with open(upload, "rb") as fh:
