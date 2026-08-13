@@ -7,55 +7,115 @@ import html
 from .redif import paper_handle
 from .zenodo import Paper
 
-_STYLE = """
+# Typography and palette follow idea.devecon.org, so the series does not
+# look like a different organisation from its parent society.  The three
+# families are the parent's (Archivo Black display, Libre Franklin text,
+# Space Mono for identifiers), but served from assets/fonts/ rather than
+# Google's CDN: no third-party request, and an archive that outlives its
+# editor should not depend on someone else's uptime.  All three are
+# SIL Open Font License 1.1; each family's licence is kept verbatim
+# beside the files, in assets/fonts/OFL-*.txt.
+#
+# Both subsets share the same two unicode-ranges across all three
+# families, so they are named once here.
+_LATIN = (
+    "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,"
+    "U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,"
+    "U+2212,U+2215,U+FEFF,U+FFFD"
+)
+_LATIN_EXT = (
+    "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,"
+    "U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,"
+    "U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+)
+
+
+def _face(family: str, filename: str, weight: str, urange: str) -> str:
+    return (
+        f"@font-face{{font-family:'{family}';font-style:normal;"
+        f"font-weight:{weight};font-display:swap;"
+        f"src:url(assets/fonts/{filename}) format('woff2');"
+        f"unicode-range:{urange}}}"
+    )
+
+
+# Libre Franklin is a variable font (wght 100-900): one file covers every
+# weight, so it is declared with a range rather than shipped twice.
+_FONTS = "\n".join(
+    _face(fam, f"{stem}-{sub}.woff2", wt, rng)
+    for fam, stem, wt in (
+        ("Archivo Black", "archivo-black-400", "400"),
+        ("Libre Franklin", "libre-franklin-var", "100 900"),
+        ("Space Mono", "space-mono-400", "400"),
+    )
+    for sub, rng in (("latin", _LATIN), ("latin-ext", _LATIN_EXT))
+)
+
+_STYLE = (
+    _FONTS
+    + """
 :root {
-  --bg: #ffffff; --fg: #1a1a1a; --muted: #5a6270; --accent: #14532d;
-  --accent-2: #1a7a43; --rule: #e3e6ea; --card: #f7f8f9;
+  --bg: #fefdfb; --fg: #1a1714; --muted: #666; --accent: #1d6e87;
+  --accent-hover: #155a6e; --rule: #dad6cf; --card: #f7f6f3;
+  --sans: 'Libre Franklin', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Archivo Black', 'Libre Franklin', sans-serif;
+  --mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif: Georgia, 'Times New Roman', serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14181d; --fg: #e8eaed; --muted: #9aa4b2; --accent: #7fd4a3;
-    --accent-2: #5cbb85; --rule: #2a313a; --card: #1c2129;
+    --bg: #1a1714; --fg: #f0ece6; --muted: #a19a91; --accent: #7ec3d8;
+    --accent-hover: #a3d6e6; --rule: #3a342e; --card: #221e1a;
   }
 }
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--bg); color: var(--fg);
-  font: 17px/1.6 Georgia, 'Times New Roman', serif;
+  font: 17px/1.6 var(--sans);
 }
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
 header {
-  border-bottom: 3px double var(--rule); padding: 2.5rem 1rem 1.5rem;
+  border-bottom: 3px solid var(--rule); padding: 2.5rem 1rem 1.5rem;
   text-align: center;
 }
-header h1 { margin: 0 0 .35rem; font-size: 1.9rem; letter-spacing: .01em; }
+header h1 {
+  font-family: var(--display); margin: 0 0 .6rem; font-size: 1.85rem;
+  letter-spacing: -.01em; line-height: 1.2;
+}
 header p { margin: .25rem auto; max-width: 44rem; color: var(--muted); }
-header a { color: var(--accent-2); }
 main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
-article {
-  border-bottom: 1px solid var(--rule); padding: 1.4rem 0;
+article { border-bottom: 1px solid var(--rule); padding: 1.4rem 0; }
+.wpno {
+  font-family: var(--mono); color: var(--muted); font-size: .78rem;
+  letter-spacing: .02em; margin: 0;
 }
-.wpno { color: var(--muted); font-size: .85rem; letter-spacing: .04em; }
-article h2 { margin: .15rem 0 .3rem; font-size: 1.25rem; }
-article h2 a { color: var(--accent); text-decoration: none; }
-article h2 a:hover { text-decoration: underline; }
+article h2 {
+  font-weight: 700; margin: .25rem 0 .3rem; font-size: 1.2rem;
+  line-height: 1.3; letter-spacing: -.005em;
+}
 .authors { margin: 0 0 .2rem; }
-.meta { color: var(--muted); font-size: .9rem; }
+.meta { font-family: var(--mono); color: var(--muted); font-size: .8rem; }
 details { margin-top: .5rem; }
-summary { cursor: pointer; color: var(--accent-2); font-size: .95rem; }
-details p { margin: .5rem 0 0; color: var(--fg); }
-.links { margin-top: .55rem; font-size: .95rem; }
-.links a {
-  color: var(--accent-2); margin-right: 1.1rem; text-decoration: none;
+summary { cursor: pointer; color: var(--accent); font-size: .9rem; }
+summary:hover { color: var(--accent-hover); }
+details p {
+  margin: .5rem 0 0; color: var(--fg); font-family: var(--serif);
+  line-height: 1.65;
 }
-.links a:hover { text-decoration: underline; }
-.kw { font-size: .85rem; color: var(--muted); margin-top: .35rem; }
+.links { font-family: var(--mono); margin-top: .55rem; font-size: .82rem; }
+.links a { margin-right: 1.1rem; }
+.kw {
+  font-family: var(--mono); font-size: .76rem; color: var(--muted);
+  margin-top: .35rem; line-height: 1.5;
+}
 footer {
   border-top: 1px solid var(--rule); color: var(--muted);
   font-size: .85rem; text-align: center; padding: 1.5rem 1rem 2.5rem;
 }
-footer a { color: var(--accent-2); }
 .empty { text-align: center; color: var(--muted); padding: 3rem 0; }
 """
+)
 
 
 def _paper_entry(paper: Paper, entry: dict, cfg: dict) -> str:

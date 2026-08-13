@@ -76,6 +76,12 @@ def build(cfg: dict, ledger_path: str | Path) -> dict:
     )
     (out / ".nojekyll").write_text("", encoding="utf-8")
 
+    # Static assets (self-hosted webfonts, and their licences) live in the
+    # repository; the site tree is disposable and rebuilt from them.
+    assets = Path(__file__).resolve().parent.parent / "assets"
+    if assets.is_dir():
+        shutil.copytree(assets, out / "assets", dirs_exist_ok=True)
+
     return {
         "papers": len(ledger["papers"]),
         "new": [e["number"] for e in new],
