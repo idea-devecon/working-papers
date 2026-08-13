@@ -81,6 +81,13 @@ def build(cfg: dict, ledger_path: str | Path) -> dict:
     assets = Path(__file__).resolve().parent.parent / "assets"
     if assets.is_dir():
         shutil.copytree(assets, out / "assets", dirs_exist_ok=True)
+        # The favicon also goes to the site root, which is where the
+        # parent society serves its own and where a browser looks by
+        # default for pages that do not declare one (the ReDIF
+        # directory listings, say).
+        favicon = assets / "favicon.svg"
+        if favicon.is_file():
+            shutil.copyfile(favicon, out / "favicon.svg")
 
     return {
         "papers": len(ledger["papers"]),
