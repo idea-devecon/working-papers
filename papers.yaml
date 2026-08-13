@@ -1,7 +1,7 @@
 # IDEA Working Papers ledger.  Numbers are assigned once and never
 # reused.  Maintained by the build pipeline; editors may add per-
 # paper overrides (e.g. 'jel: [O12, Q18]') by hand.
-next_number: 3
+next_number: 5
 papers:
 - number: 1
   conceptrecid: '21904877'
@@ -25,3 +25,20 @@ papers:
   - Ahmed, Resuf
   - Brimble, Paul
   date: '2026-08-07'
+- number: 3
+  conceptrecid: '21907664'
+  added: '2026-08-12'
+  title: 'Heat and Healthcare Utilization in the Tropics: Evidence from India'
+  authors:
+  - Dureja, Abhishek
+  - Jain, Tarun
+  date: '2026-08-11'
+- number: 4
+  conceptrecid: '21907670'
+  added: '2026-08-12'
+  title: 'When Science Feels like Math: Quantitative Content in Science Assessments
+    and the Gender Achievement Gap'
+  authors:
+  - Jain, Divyanshu
+  - Jain, Tarun
+  date: '2026-08-12'
