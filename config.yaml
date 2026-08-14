@@ -25,6 +25,10 @@ repec:
     DOI.
   provider_name: International Development Economics Association (IDEA)
   provider_homepage: https://idea.devecon.org/
+  # The society's EDIRC handle, which cross-links the series to IDEA's
+  # institution record on IDEAS: https://edirc.repec.org/data/ideaaea.html
+  # Optional -- a fork without an EDIRC record omits this key.
+  provider_institution: RePEc:edi:ideaaea
   maintainer_name: Ethan Ligon
   # Role address, so the RePEc registration survives a change of
   # series editor.

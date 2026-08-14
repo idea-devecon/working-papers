@@ -126,6 +126,16 @@ def test_series_template(cfg):
     assert f["Handle"] == ["RePEc:idd:wpaper"]
     assert f["Type"] == ["ReDIF-Paper"]
     assert "Provider-Name" in f and "Maintainer-Email" in f
+    assert f["Provider-Institution"] == ["RePEc:edi:ideaaea"]
+
+
+def test_series_template_omits_absent_institution(cfg):
+    """Provider-Institution is optional; a fork without an EDIRC record
+    should still emit a valid series template."""
+    del cfg["repec"]["provider_institution"]
+    f = _fields(redif.series_template(cfg))
+    assert "Provider-Institution" not in f
+    assert f["Handle"] == ["RePEc:idd:wpaper"]
 
 
 def test_paper_template_mandatory_fields(cfg, papers):

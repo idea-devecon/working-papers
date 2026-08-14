@@ -63,6 +63,14 @@ def series_template(cfg: dict) -> str:
         field("Type", "ReDIF-Paper"),
         field("Provider-Name", r["provider_name"]),
         field("Provider-Homepage", r["provider_homepage"]),
+    ]
+    # Optional, and the only optional Provider-* field: the provider's
+    # EDIRC handle, which lets RePEc cross-link the series with the
+    # society's institution record.  A fork without an EDIRC record
+    # leaves the key out of config.yaml.
+    if r.get("provider_institution"):
+        lines.append(field("Provider-Institution", r["provider_institution"]))
+    lines += [
         field("Maintainer-Name", r["maintainer_name"]),
         field("Maintainer-Email", r["maintainer_email"]),
         field("Handle", f"RePEc:{r['archive_code']}:{r['series_code']}"),
