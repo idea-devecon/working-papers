@@ -321,6 +321,7 @@ import http.server
 import socket
 import socketserver
 import threading
+import time
 
 import requests
 from requests.adapters import BaseAdapter
@@ -339,12 +340,19 @@ class _Server:
             def do_GET(self):
                 hits.append(self.path)
                 status, body = reply(len(hits), self.path)
-                payload = body.encode()
+                # A list of (delay, bytes) pairs models a trickling body.
+                chunks = [(0, body.encode())] if isinstance(body, str) else body
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(payload)))
+                self.send_header("Content-Length", str(sum(len(b) for _, b in chunks)))
                 self.end_headers()
-                self.wfile.write(payload)
+                try:
+                    for delay, payload in chunks:
+                        time.sleep(delay)
+                        self.wfile.write(payload)
+                        self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    pass  # deadline tests deliberately abandon the response
 
             def log_message(self, *a):
                 pass
@@ -536,6 +544,87 @@ def test_every_page_is_collected(server, impatient):
     got = zenodo.fetch_community_records(srv_url + "/api", "c")
     assert [p.recid for p in got] == [int(h["id"]) for h in RAW_HITS]
     assert srv.hits[1] == "/api/next-page"  # the next link, used verbatim
+
+
+@pytest.mark.parametrize("phase", ["headers", "body"])
+def test_deadline_bounds_slow_successful_responses(server, monkeypatch, phase):
+    monkeypatch.setattr(zenodo, "FETCH_DEADLINE", 0.15)
+    payload = json.dumps(_page([]))
+    finished = threading.Event()
+
+    def reply(n, path):
+        if phase == "headers":
+            finished.wait(2)
+            return 200, payload
+        # Each byte arrives well within the socket read timeout, but the
+        # whole response cannot possibly arrive within the fetch budget.
+        return 200, [(0.025, bytes([b])) for b in payload.encode()]
+
+    srv = server(reply)
+    start = time.monotonic()
+    try:
+        with pytest.raises(zenodo.ZenodoUnreachable, match="deadline"):
+            zenodo.fetch_community_records(srv.url + "/api", "c")
+        assert time.monotonic() - start < 0.75  # scheduling tolerance, not 2s
+        assert len(srv.hits) == 1
+    finally:
+        finished.set()
+
+
+def test_successful_pages_share_one_deadline(server, monkeypatch):
+    monkeypatch.setattr(zenodo, "FETCH_DEADLINE", 0.15)
+
+    def reply(n, path):
+        time.sleep(0.10)
+        return 200, json.dumps(_page(
+            RAW_HITS[n - 1:n], total=2,
+            next_url=srv.url + "/page2" if n == 1 else None,
+        ))
+
+    srv = server(reply)
+    with pytest.raises(zenodo.ZenodoUnreachable, match="deadline"):
+        zenodo.fetch_community_records(srv.url + "/api", "c")
+    assert len(srv.hits) == 2
+
+
+def test_expired_deadline_starts_no_request():
+    class NoRequests:
+        def get(self, *args, **kwargs):
+            pytest.fail("request started after the deadline")
+
+    with pytest.raises(zenodo.ZenodoUnreachable, match="deadline"):
+        zenodo._get_json(NoRequests(), "unused", None, time.monotonic() - 1)
+
+
+def test_deadline_refuses_retry_beyond_remaining_budget(server, monkeypatch):
+    monkeypatch.setattr(zenodo, "FETCH_DEADLINE", 0.15)
+    monkeypatch.setattr(zenodo, "BACKOFF_BASE", 1.0)
+    srv = server(lambda n, path: (503, ""))
+    start = time.monotonic()
+    with pytest.raises(zenodo.ZenodoUnreachable, match="deadline"):
+        zenodo.fetch_community_records(srv.url + "/api", "c")
+    assert len(srv.hits) == 1
+    assert time.monotonic() - start < 0.75
+
+
+def test_deadline_refusal_preserves_existing_ledger_and_site(
+    cfg, tmp_path, server, monkeypatch
+):
+    from ideawp import build as build_mod
+
+    monkeypatch.setattr(zenodo, "FETCH_DEADLINE", 0.15)
+    payload = json.dumps(_page(RAW_HITS)).encode()
+    srv = server(lambda n, path: (200, [(0.025, bytes([b])) for b in payload]))
+    ledger_path = _seeded_ledger(tmp_path)
+    before = ledger_path.read_bytes()
+    out = tmp_path / "site"
+    out.mkdir()
+    (out / "index.html").write_text("previous deployment")
+    with pytest.raises(build_mod.ZenodoUnavailable, match="deadline"):
+        build_mod.build(_cfg_at(cfg, srv.url, tmp_path), ledger_path)
+    assert ledger_path.read_bytes() == before
+    assert sorted(p.name for p in out.iterdir()) == ["index.html"]
+    assert (out / "index.html").read_text() == "previous deployment"
 
 
 def test_pagination_that_loops_is_refused(server, impatient):

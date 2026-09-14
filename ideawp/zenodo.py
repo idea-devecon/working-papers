@@ -11,7 +11,10 @@ HTML ``metadata.description``, and a top-level ``files`` list.
 from __future__ import annotations
 
 import html
+import json
 import re
+import threading
+from concurrent.futures import Future, TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from urllib.parse import quote
@@ -84,17 +87,13 @@ def _get_json(session, url, params, deadline) -> tuple[dict, int]:
     """
     attempt = 0
     while True:
+        if time.monotonic() >= deadline:
+            raise ZenodoUnreachable("Zenodo fetch deadline is spent", attempt)
         attempt += 1
         try:
-            resp = session.get(url, params=params, timeout=TIMEOUT)
-            if resp.status_code in RETRY_STATUSES:
-                raise requests.exceptions.HTTPError(
-                    f"HTTP {resp.status_code} from Zenodo", response=resp
-                )
-            resp.raise_for_status()
-            return resp.json(), attempt
-        except requests.RequestException as exc:
-            resp = exc.response
+            return _read_json(session, url, params, deadline, attempt), attempt
+        except (requests.RequestException, json.JSONDecodeError) as exc:
+            resp = getattr(exc, "response", None)
             status = resp.status_code if resp is not None else None
             if status is not None and status not in RETRY_STATUSES:
                 raise
@@ -116,6 +115,48 @@ def _get_json(session, url, params, deadline) -> tuple[dict, int]:
                     attempt,
                 ) from exc
             time.sleep(delay)
+
+
+def _read_json(session, url, params, deadline, attempt) -> dict:
+    """Bound the caller's wait, including headers, body and JSON decoding.
+
+    Socket timeouts alone permit an indefinitely trickling response. A daemon
+    reader owns and closes the response, and checks the deadline between bytes
+    so it unwinds on the next byte or socket timeout after the caller refuses.
+    It never mutates pipeline state or starts another request (ledger section 5).
+    """
+    result = Future()
+
+    def read():
+        try:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ZenodoUnreachable("Zenodo fetch deadline is spent", attempt)
+            timeout = tuple(min(t, remaining) for t in TIMEOUT)
+            with session.get(url, params=params, timeout=timeout, stream=True) as resp:
+                if resp.status_code in RETRY_STATUSES:
+                    raise requests.exceptions.HTTPError(
+                        f"HTTP {resp.status_code} from Zenodo", response=resp
+                    )
+                resp.raise_for_status()
+                body = bytearray()
+                for chunk in resp.iter_content(chunk_size=1):
+                    if time.monotonic() >= deadline:
+                        raise ZenodoUnreachable("Zenodo fetch deadline is spent", attempt)
+                    body.extend(chunk)
+                data = json.loads(body)
+            result.set_result(data)
+        except BaseException as exc:
+            result.set_exception(exc)
+
+    threading.Thread(target=read, daemon=True).start()
+    try:
+        data = result.result(timeout=max(0.0, deadline - time.monotonic()))
+    except FutureTimeout as exc:
+        raise ZenodoUnreachable("Zenodo fetch deadline is spent", attempt) from exc
+    if time.monotonic() >= deadline:
+        raise ZenodoUnreachable("Zenodo fetch deadline is spent", attempt)
+    return data
 
 
 # A JEL classification code: letter + 1-2 digits (e.g. O12, Q18, D1).
@@ -261,13 +302,14 @@ def fetch_community_records(
     s = session or make_session()
     try:
         seen_urls: set[str] = set()
+        attempts = 0
         while url:
             if url in seen_urls:  # a self-referential links.next
                 raise FetchIncomplete(
                     f"Zenodo pagination revisited {url}; refusing to loop."
                 )
             seen_urls.add(url)
-            data, _ = _get_json(s, url, params, deadline)
+            data, attempts = _get_json(s, url, params, deadline)
             hits = data["hits"]
             if reported is None:
                 total = hits.get("total")
@@ -285,4 +327,6 @@ def fetch_community_records(
         raise FetchIncomplete(
             f"Zenodo reported {reported} record(s) but returned {len(papers)}."
         )
+    if time.monotonic() >= deadline:
+        raise ZenodoUnreachable("Zenodo fetch deadline is spent", attempts)
     return papers

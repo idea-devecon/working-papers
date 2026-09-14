@@ -95,10 +95,14 @@ no further action.
   `papers.yaml`, adding e.g. `jel: [O12, Q16]`. This overrides
   whatever was parsed from Zenodo keywords.
 
-- **Withdrawing a paper:** remove the record from the Zenodo
-  community (or restrict it). The pipeline keeps the WP number
+- **Withdrawing a paper:** set `withdrawn: true` on its entry in
+  `papers.yaml` and commit the change. The pipeline keeps the WP number
   reserved and emits a metadata stub marked withdrawn, per RePEc
-  convention. Numbers are never reused.
+  convention, even if Zenodo still serves the record. Numbers are never
+  reused. Removing or restricting the Zenodo record is optional; doing
+  that alone stops the build because a missing live paper is an alarm,
+  not an instruction to withdraw. To restore a paper, restore its public
+  community record and remove the flag (or set it to `false`).
 
 - **Quarterly highlights:** pick 3–5 papers from the index page;
   nothing in this pipeline needs to change.
