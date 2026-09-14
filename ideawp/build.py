@@ -14,10 +14,29 @@ import shutil
 import sys
 from pathlib import Path
 
+import requests
 import yaml
 
 from . import ledger as ledger_mod
 from . import redif, site, zenodo
+
+
+class BuildRefused(RuntimeError):
+    """The build declined to rebuild; the already deployed tree stands."""
+
+    title = "Build refused"
+
+
+class ZenodoUnavailable(BuildRefused):
+    """Zenodo could not be reached; upstream outage, not a build defect."""
+
+    title = "Zenodo unavailable"
+
+
+class IncompleteData(BuildRefused):
+    """Zenodo answered, but not with the whole series."""
+
+    title = "Zenodo data incomplete"
 
 
 def load_config(path: str | Path) -> dict:
@@ -31,10 +50,42 @@ def build(cfg: dict, ledger_path: str | Path) -> dict:
     arch_dir = out / "RePEc" / r["archive_code"]
     wp_dir = arch_dir / r["series_code"]
 
-    papers = zenodo.fetch_community_records(
-        cfg["zenodo"]["api_base"], cfg["zenodo"]["community"]
-    )
+    # Any failure here is fatal.  A short or empty fetch must never be
+    # rendered as a tree: the ledger turns absence into RePEc withdrawal
+    # notices, and the deployed tree stays live if we refuse, so an
+    # outage costs only the day's refresh.
+    try:
+        papers = zenodo.fetch_community_records(
+            cfg["zenodo"]["api_base"], cfg["zenodo"]["community"]
+        )
+    except zenodo.ZenodoUnreachable as exc:
+        raise ZenodoUnavailable(f"{exc}; site not rebuilt.") from exc
+    except zenodo.FetchIncomplete as exc:
+        raise IncompleteData(f"{exc}  Site not rebuilt.") from exc
+    except requests.exceptions.HTTPError:
+        # 4xx: our request is wrong (a renamed community, a bad
+        # api_base), not an outage.  Surface it as the build defect it is.
+        raise
+    except requests.RequestException as exc:
+        raise ZenodoUnavailable(
+            f"Zenodo fetch failed ({exc.__class__.__name__}); site not rebuilt."
+        ) from exc
+
     ledger = ledger_mod.load(ledger_path)
+
+    # The fetch parsed cleanly and was self-consistent, and can still be
+    # the wrong community, or a page Zenodo silently truncated.  Absence
+    # is an alarm, never an instruction to withdraw.
+    missing = ledger_mod.missing_from(ledger, papers)
+    if missing:
+        numbers = ", ".join(str(e["number"]) for e in missing)
+        raise IncompleteData(
+            f"{len(missing)} of {len(ledger['papers'])} ledger paper(s) are "
+            f"absent from the Zenodo fetch (number(s) {numbers}); site not "
+            "rebuilt.  Withdrawal is manual: if these were withdrawn "
+            "deliberately, set 'withdrawn: true' on them in papers.yaml."
+        )
+
     new = ledger_mod.sync(ledger, papers)
     ledger_mod.save(ledger_path, ledger)
 
@@ -107,7 +158,11 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     cfg = load_config(args.config)
-    summary = build(cfg, args.ledger)
+    try:
+        summary = build(cfg, args.ledger)
+    except BuildRefused as exc:
+        print(f"::error title={exc.title}::{exc}", file=sys.stderr)
+        return 1
     print(
         f"Built {summary['output']}: {summary['papers']} paper(s) in ledger; "
         f"new: {summary['new'] or 'none'}; withdrawn: {summary['withdrawn'] or 'none'}"

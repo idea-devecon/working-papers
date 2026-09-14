@@ -90,7 +90,9 @@ def paper_template(paper: Paper | None, entry: dict, cfg: dict) -> str:
     number = entry["number"]
     lines = [field("Template-Type", "ReDIF-Paper 1.0")]
 
-    if paper is not None:
+    # The ledger's withdrawn flag is authoritative, even if the record
+    # is still in the Zenodo community.
+    if paper is not None and not entry.get("withdrawn"):
         for c in paper.creators:
             lines.append(field("Author-Name", c["name"]))
             if c.get("affiliation"):
