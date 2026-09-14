@@ -15,6 +15,13 @@ Enforce the whole-fetch deadline and document manual withdrawal in PR #1.
 - `ideawp/build.py:build`: fetch and integrity checks precede ledger/site writes;
   covered by `test_a_silently_empty_fetch_never_withdraws_the_series`.
 
+- `ideawp/zenodo.py:_read_json`: bounded caller wait and response cleanup;
+  covered by `test_deadline_bounds_slow_successful_responses` (headers/body),
+  `test_successful_pages_share_one_deadline`, and the expired-budget test.
+- `test_deadline_refusal_preserves_existing_ledger_and_site` verifies section 4
+  on an actual trickling HTTP response. All 50 tests pass; four new deadline
+  regressions fail against PR head `3369d4f`.
+
 ## 3. Definitions
 - `zenodo.py:FETCH_DEADLINE` is seconds for the whole fetch, all pages included.
 - `zenodo.py:TIMEOUT` is the connect/read timeout for one attempt.
